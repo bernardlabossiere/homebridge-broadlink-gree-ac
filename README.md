@@ -55,6 +55,21 @@ npm install homebridge-broadlink-gree-ac
 
 ## Changelog
 
+### [1.0.8] - 2026-06-05
+- Updated README changelog (no code changes)
+
+### [1.0.7] - 2026-06-05
+- Fixed critical crash: IRCodeManager now uses bundled 1180.json by default when irCodesFile is not configured
+- irCodesFile config field is now truly optional — plugin works out-of-the-box
+
+### [1.0.6] - 2026-06-05
+- Fixed config.schema: MAC Address and SmartIR JSON File Path are now truly optional in UI (no asterisk)
+- Minimum temperature default changed to 8C in UI
+- Device Type field hidden from UI (auto-detected)
+
+### [1.0.5] - 2026-06-05
+- Version bump (schema fix attempt)
+
 ### [1.0.4] - 2026-06-05
 - MAC address field is now truly optional in UI (auto-discovered from IP)
 - SmartIR JSON file path is now optional (bundled 1180.json used by default for GREE GWH12-KF-K3DNA5G-I)
