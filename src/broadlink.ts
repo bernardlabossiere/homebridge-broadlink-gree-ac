@@ -23,7 +23,7 @@ export class BroadlinkRM {
     this.count=(this.count+1)&0xffff;
     const h=Buffer.alloc(0x38,0);
     h.writeUInt16LE(0x5a69,0); h.writeUInt16LE(this.devtype,0x24); h.writeUInt16LE(this.count,0x28);
-    this.mac.copy(h,0x2a); this.id.copy(h,0x30); h.writeUInt16LE(this.cs(payload),0x34); h[0x26]=cmd;
+    (this.mac??Buffer.alloc(6,0)).copy(h,0x2a); this.id.copy(h,0x30); h.writeUInt16LE(this.cs(payload),0x34); h[0x26]=cmd;
     const f=Buffer.concat([h,this.encrypt(payload)]); f.writeUInt16LE(this.cs(f),0x20); return f;
   }
 
