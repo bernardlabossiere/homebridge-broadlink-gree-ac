@@ -12,7 +12,7 @@ export class BroadlinkRM {
   private count = Math.random()*0xffff|0;
   private authenticated = false;
 
-  constructor(private readonly host:string, private readonly mac:Buffer, private readonly devtype:number=0x6026, private readonly log:Logger){}
+  constructor(private readonly host:string, private readonly mac:Buffer|null, private readonly devtype:number=0x6026, private readonly log:Logger){}
 
   private pad(d:Buffer):Buffer{ const l=Math.ceil(d.length/16)*16||16; const o=Buffer.alloc(l,0); d.copy(o); return o; }
   private encrypt(d:Buffer):Buffer{ const c=crypto.createCipheriv('aes-128-cbc',this.key,this.iv); c.setAutoPadding(false); return Buffer.concat([c.update(this.pad(d)),c.final()]); }

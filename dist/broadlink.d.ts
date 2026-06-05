@@ -9,7 +9,7 @@ export declare class BroadlinkRM {
     private id;
     private count;
     private authenticated;
-    constructor(host: string, mac: Buffer, devtype: number | undefined, log: Logger);
+    constructor(host: string, mac: Buffer | null, devtype: number | undefined, log: Logger);
     private pad;
     private encrypt;
     private decrypt;
