@@ -42,7 +42,7 @@ class GreeACAccessory {
         if (cfg.antiFrostSwitch !== false) {
             const suf = cfg.antiFrostNameSuffix ?? 'anti-frost';
             const nm = `${cfg.name} ${suf}`;
-            this.af = acc.getService(nm) || acc.addService(S.Switch, nm, 'antifrost');
+            this.af = acc.services.find(s => s.subtype === 'antifrost') ?? acc.addService(S.Switch, nm, 'antifrost');
             this.af.getCharacteristic(C.On).onGet(() => this.afActive).onSet(v => this.setAF(v));
             platform.log.info(`[${cfg.name}] Anti-frost service added`);
         }
