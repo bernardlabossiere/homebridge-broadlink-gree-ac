@@ -35,8 +35,13 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IRCodeManager = void 0;
 const fs = __importStar(require("fs"));
+const path = __importStar(require("path"));
+const BUNDLED_CODES = path.join(__dirname, '..', 'codes', '1180.json');
 class IRCodeManager {
-    constructor(f) { this.data = JSON.parse(fs.readFileSync(f, 'utf8')); }
+    constructor(filePath) {
+        const resolved = filePath || BUNDLED_CODES;
+        this.data = JSON.parse(fs.readFileSync(resolved, 'utf8'));
+    }
     get minTemp() { return this.data.minTemperature; }
     get maxTemp() { return this.data.maxTemperature; }
     offCode() { return Buffer.from(this.data.commands.off, 'base64'); }
