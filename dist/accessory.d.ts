@@ -1,0 +1,28 @@
+import { PlatformAccessory } from 'homebridge';
+import type { BroadlinkGreeACPlatform } from './platform';
+import { GreeACDeviceConfig } from './config';
+export declare class GreeACAccessory {
+    private readonly platform;
+    private readonly acc;
+    private readonly cfg;
+    private hc;
+    private af;
+    private readonly rm;
+    private readonly ir;
+    private state;
+    private preAF;
+    private afActive;
+    private readonly afTemp;
+    private readonly minT;
+    private readonly maxT;
+    constructor(platform: BroadlinkGreeACPlatform, acc: PlatformAccessory, cfg: GreeACDeviceConfig);
+    private setActive;
+    private setMode;
+    private setTemp;
+    private setFan;
+    private setAF;
+    private sendOff;
+    private sendNow;
+    private f2p;
+    private p2f;
+}

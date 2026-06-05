@@ -1,0 +1,78 @@
+{
+  "pluginAlias": "BroadlinkGreeAC",
+  "pluginType": "platform",
+  "singular": false,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Platform Name",
+        "type": "string",
+        "default": "Broadlink GREE AC",
+        "required": true
+      },
+      "devices": {
+        "title": "Devices",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "Device Name",
+              "type": "string",
+              "required": true
+            },
+            "host": {
+              "title": "Broadlink RM4 IP Address",
+              "type": "string",
+              "required": true
+            },
+            "mac": {
+              "title": "MAC Address (no separators)",
+              "type": "string",
+              "required": true,
+              "description": "e.g. aabbccddeeff"
+            },
+            "devtype": {
+              "title": "Device Type (integer)",
+              "type": "integer",
+              "default": 24614,
+              "description": "24614 = 0x6026 RM4 Mini, 20954 = 0x51da RM4 Mini alt"
+            },
+            "irCodesFile": {
+              "title": "SmartIR JSON File Path",
+              "type": "string",
+              "required": true,
+              "description": "Full path on server e.g. /homebridge/1180.json"
+            },
+            "minTemperature": {
+              "title": "Min Temperature (\u00b0C)",
+              "type": "number",
+              "default": 16
+            },
+            "maxTemperature": {
+              "title": "Max Temperature (\u00b0C)",
+              "type": "number",
+              "default": 30
+            },
+            "antiFrostSwitch": {
+              "title": "Enable Anti-Frost Switch",
+              "type": "boolean",
+              "default": true
+            },
+            "antiFrostTemperature": {
+              "title": "Anti-Frost Temperature (\u00b0C)",
+              "type": "number",
+              "default": 8
+            },
+            "antiFrostNameSuffix": {
+              "title": "Anti-Frost Switch Name Suffix",
+              "type": "string",
+              "default": "anti-frost"
+            }
+          }
+        }
+      }
+    }
+  }
+}

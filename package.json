@@ -1,0 +1,52 @@
+{
+  "name": "homebridge-broadlink-gree-ac",
+  "displayName": "Broadlink GREE Air Conditioner",
+  "version": "1.0.0",
+  "description": "Control GREE AC via Broadlink RM IR blaster with anti-frost support. SmartIR codes compatible.",
+  "author": "Bernard Labossiere",
+  "contributors": [
+    {
+      "name": "SmartIR project",
+      "url": "https://github.com/smartHomeHub/SmartIR",
+      "note": "IR code format compatible with SmartIR climate JSON files"
+    }
+  ],
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/bernardlabossiere/homebridge-broadlink-gree-ac#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bernardlabossiere/homebridge-broadlink-gree-ac.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bernardlabossiere/homebridge-broadlink-gree-ac/issues"
+  },
+  "keywords": [
+    "homebridge-plugin",
+    "homebridge",
+    "homekit",
+    "broadlink",
+    "gree",
+    "air conditioner",
+    "heatercooler",
+    "anti-frost",
+    "smartir",
+    "IR",
+    "RM4 Mini"
+  ],
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "homebridge": ">=1.8.0"
+  },
+  "scripts": {
+    "build": "rimraf ./dist && tsc",
+    "prepublishOnly": "npm run build",
+    "prepare": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "homebridge": "^2.0.0",
+    "rimraf": "^5.0.0",
+    "typescript": "^5.0.0"
+  }
+}
