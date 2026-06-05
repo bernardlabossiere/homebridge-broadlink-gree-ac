@@ -28,27 +28,19 @@
               "required": true
             },
             "mac": {
-              "title": "MAC Address (no separators)",
+              "title": "MAC Address (optional)",
               "type": "string",
-              "required": true,
-              "description": "e.g. aabbccddeeff"
-            },
-            "devtype": {
-              "title": "Device Type (integer)",
-              "type": "integer",
-              "default": 24614,
-              "description": "24614 = 0x6026 RM4 Mini, 20954 = 0x51da RM4 Mini alt"
+              "description": "Leave empty \u2014 auto-discovered from IP. Format: aabbccddeeff"
             },
             "irCodesFile": {
-              "title": "SmartIR JSON File Path",
+              "title": "SmartIR JSON File Path (optional)",
               "type": "string",
-              "required": true,
-              "description": "Full path on server e.g. /homebridge/1180.json"
+              "description": "Leave empty to use bundled GREE 1180.json. Custom path e.g. /homebridge/mymodel.json"
             },
             "minTemperature": {
               "title": "Min Temperature (\u00b0C)",
               "type": "number",
-              "default": 16
+              "default": 8
             },
             "maxTemperature": {
               "title": "Max Temperature (\u00b0C)",
