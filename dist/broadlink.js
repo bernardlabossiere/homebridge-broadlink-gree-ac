@@ -98,13 +98,16 @@ class BroadlinkRM {
         p[0x2d] = 1;
         Buffer.from('homebridge').copy(p, 0x30);
         const r = await this.tx(this.build(0x65, p));
-        if (r.length < 0x38 + 16)
-            throw new Error('auth too short');
-        const d = this.decrypt(r.slice(0x38));
-        this.id = d.slice(0, 4);
-        this.key = d.slice(4, 20);
+        if (r.length >= 0x38 + 16) {
+            const d = this.decrypt(r.slice(0x38));
+            this.id = d.slice(0, 4);
+            this.key = d.slice(4, 20);
+            this.log.info('[Broadlink] ' + this.host + ' auth OK (key exchanged)');
+        }
+        else {
+            this.log.warn('[Broadlink] ' + this.host + ' auth short (' + r.length + 'b), using default key');
+        }
         this.authenticated = true;
-        this.log.debug('[Broadlink] ' + this.host + ' authenticated');
     }
     async sendData(code) {
         if (!this.authenticated)
