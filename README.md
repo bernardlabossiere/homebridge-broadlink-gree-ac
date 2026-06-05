@@ -55,6 +55,28 @@ npm install homebridge-broadlink-gree-ac
 
 ## Changelog
 
+### [1.0.4] - 2026-06-05
+- MAC address field is now truly optional in UI (auto-discovered from IP)
+- SmartIR JSON file path is now optional (bundled 1180.json used by default for GREE GWH12-KF-K3DNA5G-I)
+- Minimum temperature default changed from 16°C to 8°C in UI
+
+### [1.0.3] - 2026-06-05
+- Minimum temperature defaults to anti-frost temperature (8°C) so setpoint is always reachable
+- HomeKit status (Active, CurrentTemperature, HeaterCoolerState, RotationSpeed) updated after every IR send
+- Explicit state save before anti-frost activation and restore on deactivation
+- Bundled GREE 1180.json from SmartIR — no external file needed
+
+### [1.0.2] - 2026-06-05
+- MAC address auto-discovered from IP (optional config)
+- codes/1180.json bundled in package
+
+### [1.0.1] - 2026-06-05
+- MAC address optional — auto-discovered from IP using Broadlink discovery protocol
+- Added README with full documentation
+
+### [1.0.0] - 2026-06-05
+- Initial release
+
 ### [1.0.1] - 2026-06-05
 - MAC address is now optional - auto-discovered from IP
 - Added README with full documentation
