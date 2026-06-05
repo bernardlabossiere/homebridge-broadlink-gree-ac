@@ -9,7 +9,7 @@ class GreeACAccessory {
         this.acc = acc;
         this.cfg = cfg;
         this.af = null;
-        this.state = { powered: false, mode: 'heat_cool', temperature: 21, fan: 'auto' };
+        this.state = { powered: false, mode: 'cool', temperature: 21, fan: 'auto' };
         this.preAF = null;
         this.afActive = false;
         const C = platform.Characteristic, S = platform.Service;
@@ -30,7 +30,7 @@ class GreeACAccessory {
                 return C.CurrentHeaterCoolerState.COOLING;
             return C.CurrentHeaterCoolerState.IDLE;
         });
-        this.hc.getCharacteristic(C.TargetHeaterCoolerState).setProps({ validValues: [0, 1, 2] })
+        this.hc.getCharacteristic(C.TargetHeaterCoolerState).setProps({ validValues: [1, 2] })
             .onGet(() => { if (this.state.mode === 'heat')
             return C.TargetHeaterCoolerState.HEAT; if (this.state.mode === 'cool')
             return C.TargetHeaterCoolerState.COOL; return C.TargetHeaterCoolerState.AUTO; })

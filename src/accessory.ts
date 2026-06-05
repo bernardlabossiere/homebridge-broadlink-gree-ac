@@ -11,7 +11,7 @@ export class GreeACAccessory {
   private af: Service|null = null;
   private readonly rm: BroadlinkRM;
   private readonly ir: IRCodeManager;
-  private state: State = {powered:false,mode:'heat_cool',temperature:21,fan:'auto'};
+  private state: State = {powered:false,mode:'cool',temperature:21,fan:'auto'};
   private preAF: State|null = null;
   private afActive = false;
   private readonly afTemp: number;
@@ -35,7 +35,7 @@ export class GreeACAccessory {
       if(this.state.mode==='cool') return C.CurrentHeaterCoolerState.COOLING;
       return C.CurrentHeaterCoolerState.IDLE;
     });
-    this.hc.getCharacteristic(C.TargetHeaterCoolerState).setProps({validValues:[0,1,2]})
+    this.hc.getCharacteristic(C.TargetHeaterCoolerState).setProps({validValues:[1,2]})
       .onGet(()=>{if(this.state.mode==='heat') return C.TargetHeaterCoolerState.HEAT; if(this.state.mode==='cool') return C.TargetHeaterCoolerState.COOL; return C.TargetHeaterCoolerState.AUTO;})
       .onSet(v=>this.setMode(v as number));
     this.hc.getCharacteristic(C.CurrentTemperature).onGet(()=>this.afActive?this.afTemp:this.state.temperature);
