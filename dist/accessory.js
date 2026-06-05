@@ -18,7 +18,7 @@ class GreeACAccessory {
         this.minT = cfg.minTemperature ?? this.ir.minTemp;
         this.maxT = cfg.maxTemperature ?? this.ir.maxTemp;
         this.state.temperature = Math.round((this.minT + this.maxT) / 2);
-        this.rm = new broadlink_1.BroadlinkRM(cfg.host, Buffer.from(cfg.mac.replace(/[:-]/g, ''), 'hex'), cfg.devtype ?? 0x6026, platform.log);
+        this.rm = new broadlink_1.BroadlinkRM(cfg.host, cfg.mac ? Buffer.from(cfg.mac.replace(/[:-]/g, ''), 'hex') : null, cfg.devtype ?? 0x6026, platform.log);
         this.hc = acc.getService(S.HeaterCooler) || acc.addService(S.HeaterCooler, cfg.name);
         this.hc.getCharacteristic(C.Active).onGet(() => this.state.powered ? C.Active.ACTIVE : C.Active.INACTIVE).onSet(v => this.setActive(v));
         this.hc.getCharacteristic(C.CurrentHeaterCoolerState).onGet(() => {
