@@ -110,19 +110,24 @@ class BroadlinkRM {
         this.authenticated = true;
     }
     async getTemperature() {
+        // RM4 Pro uses 0x24, older RM use 0x01
+        const isRM4 = (this.devtype >= 0x5000);
         const payload = Buffer.alloc(16, 0);
-        payload[0] = 0x01;
+        payload[0] = isRM4 ? 0x24 : 0x01;
         try {
             const resp = await this.tx(this.build(0x6a, payload));
+            this.log.info('[Broadlink] temp resp: ' + resp.length + 'b err=' + resp.readUInt16LE(0x22));
             if (resp.length < 0x38 + 8)
                 return null;
             const err = resp.readUInt16LE(0x22);
             if (err !== 0) {
-                this.log.warn('[Broadlink] sensor error: ' + err);
+                this.log.warn('[Broadlink] sensor error: 0x' + err.toString(16));
                 return null;
             }
             const dec = this.decrypt(resp.slice(0x38));
-            const temp = dec[0x04] + dec[0x05] / 10.0;
+            this.log.info('[Broadlink] temp bytes: ' + Array.from(dec.slice(0, 8)).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
+            // RM4 Pro: /100, older RM: /10
+            const temp = dec[0x04] + dec[0x05] / (isRM4 ? 100.0 : 10.0);
             return (temp > -20 && temp < 70) ? Math.round(temp * 10) / 10 : null;
         }
         catch (e) {
