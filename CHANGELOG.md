@@ -1,74 +1,50 @@
 # Changelog
 
-## 1.0.30
-- Documentation: README updated for RM4 Pro + working temperature sensor
+## [1.0.30] - 2026-06-06
+- Documentation: updated README to reflect the RM4 Pro and the now-working temperature/humidity sensor; cleaned up the changelog
 
+## [1.0.29] - 2026-06-06
+- **RM4 Pro temperature & humidity sensor now working!** Room temperature is reported to HomeKit and refreshed every 60 seconds.
+- Reverse-engineered the RM4 Pro authentication protocol: correct 8-byte packet signature, the correct default AES key for current RM4-family firmware, and length-prefixed payload framing for sensor and IR commands.
+- After a successful authentication handshake, all commands (IR and sensor) use the negotiated device session key.
+- Temperature polling now runs continuously instead of being disabled after a few transient failures.
 
-## 1.0.29
-- FIXED RM4 Pro temperature & humidity sensor reading (now working!)
-- Correct 8-byte packet signature (5aa5aa555aa5aa55) required by RM4 Pro for authentication
-- Use correct default AES key for RM4-family firmware
-- rmminib payload framing (length-prefixed) for sensor and IR commands
-- Room temperature & humidity now reported to HomeKit
-
-
-## [1.0.11] - 2026-06-05
-### Fixed
-- Null-safe MAC address in BroadlinkRM.build() using Buffer.alloc(6,0) fallback
-- BroadlinkRM constructor now accepts Buffer|null for MAC parameter
-
-## [1.0.10] - 2026-06-05
-### Changed
-- README changelog updated
-
-## [1.0.9] - 2026-06-05
-### Fixed
-- Fixed crash: IRCodeManager now uses bundled 1180.json by default when irCodesFile not configured
-- irCodesFile config field is now truly optional
+## [1.0.9 - 1.0.28] - 2026-06-06
+- Development iterations toward RM4 Pro temperature/humidity support, persistent-socket authentication, and IR reliability.
 
 ## [1.0.8] - 2026-06-05
-### Changed
-- README changelog updated
+- Updated README changelog (no code changes)
 
 ## [1.0.7] - 2026-06-05
-### Fixed
-- IRCodeManager uses bundled 1180.json by default (irCodesFile is optional)
+- Fixed critical crash: the bundled 1180.json is used by default when irCodesFile is not configured
+- irCodesFile is now truly optional - the plugin works out-of-the-box
 
 ## [1.0.6] - 2026-06-05
-### Fixed
-- config.schema: MAC Address and SmartIR JSON File Path truly optional (no asterisk)
-- Minimum temperature default changed to 8C in UI
-- Device Type field hidden from UI
+- config.schema: MAC Address and SmartIR JSON File Path are now truly optional in the UI
+- Minimum temperature default changed to 8 C in the UI
+- Device Type field hidden from the UI (auto-detected)
 
 ## [1.0.5] - 2026-06-05
-### Fixed
-- Version bump
+- Version bump (schema fix attempt)
 
 ## [1.0.4] - 2026-06-05
-### Fixed
-- MAC address field truly optional in Homebridge UI
-- SmartIR JSON file path truly optional
-- Minimum temperature default changed from 16C to 8C
+- MAC address field is now truly optional in the UI (auto-discovered from IP)
+- SmartIR JSON file path is now optional (bundled 1180.json used by default)
+- Minimum temperature default changed from 16 C to 8 C in the UI
 
 ## [1.0.3] - 2026-06-05
-### Fixed
-- Minimum temperature defaults to anti-frost temperature (8C)
-- HomeKit status updated after every IR send
-- Explicit state save before anti-frost, restore on deactivation
-- Bundled GREE 1180.json from SmartIR
+- Minimum temperature defaults to the anti-frost temperature (8 C) so the setpoint is always reachable
+- HomeKit characteristics updated after every IR send
+- Explicit state save before anti-frost activation and restore on deactivation
+- Bundled GREE 1180.json from SmartIR - no external file needed
 
 ## [1.0.2] - 2026-06-05
-### Changed
+- MAC address auto-discovered from IP (optional config)
 - codes/1180.json bundled in package
 
 ## [1.0.1] - 2026-06-05
-### Fixed
-- MAC address optional, auto-discovered from IP
+- MAC address optional - auto-discovered from IP using the Broadlink discovery protocol
+- Added README with full documentation
 
 ## [1.0.0] - 2026-06-05
-### Added
 - Initial release
-- HeaterCooler service (heat/cool/auto + fan speed)
-- Anti-frost switch
-- SmartIR JSON code file support
-- Native Broadlink UDP protocol implementation
