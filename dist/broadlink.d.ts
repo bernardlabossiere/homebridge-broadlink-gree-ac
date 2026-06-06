@@ -1,4 +1,8 @@
 import { Logger } from 'homebridge';
+export declare function discoverBroadlink(host: string): Promise<{
+    mac: Buffer;
+    devtype: number;
+}>;
 export declare class BroadlinkRM {
     private readonly host;
     private mac;

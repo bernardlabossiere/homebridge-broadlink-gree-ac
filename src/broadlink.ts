@@ -5,6 +5,29 @@ import { Logger } from 'homebridge';
 const DEFAULT_KEY = Buffer.from([0x09,0x76,0x28,0x34,0x3f,0xe9,0x9e,0x23,0x88,0x4f,0xa5,0x8b,0xef,0x80,0x0e,0x95]);
 const DEFAULT_IV  = Buffer.from([0x56,0x2e,0x17,0x99,0x6d,0x09,0x3d,0x28,0xdd,0xb3,0xba,0x69,0x5a,0x2e,0x6f,0x58]);
 
+export async function discoverBroadlink(host:string):Promise<{mac:Buffer,devtype:number}>{
+  return new Promise((resolve,reject)=>{
+    const port=40000+Math.floor(Math.random()*10000);
+    const now=new Date();
+    const pkt=Buffer.alloc(0x30,0);
+    pkt.writeUInt8(now.getSeconds(),0x0d);pkt.writeUInt16LE(now.getFullYear(),0x0e);
+    pkt.writeUInt8(now.getMinutes(),0x10);pkt.writeUInt8(now.getHours(),0x11);
+    pkt.writeUInt8((now.getDay()||7),0x12);pkt.writeUInt8(now.getDate(),0x13);pkt.writeUInt8(now.getMonth()+1,0x14);
+    pkt.writeUInt16LE(port,0x18);pkt[0x26]=0x06;
+    let cs=0xbeaf;for(let i=0;i<pkt.length;i++)cs=(cs+pkt[i])&0xffff;pkt.writeUInt16LE(cs,0x20);
+    const s=dgram.createSocket({type:'udp4'});
+    const t=setTimeout(()=>{try{s.close();}catch{}reject(new Error('discovery timeout '+host));},5000);
+    s.once('message',(msg,rinfo)=>{
+      clearTimeout(t);try{s.close();}catch{}
+      if(rinfo.address!==host||msg.length<0x40){reject(new Error('bad discovery response'));return;}
+      const devtype=msg.readUInt16LE(0x34);
+      const mac=Buffer.from(msg.slice(0x3a,0x40)).reverse();
+      resolve({mac,devtype});
+    });
+    s.bind(port,()=>s.send(pkt,80,host,e=>{if(e){clearTimeout(t);try{s.close();}catch{}reject(e);}}));
+  });
+}
+
 export class BroadlinkRM {
   private key = Buffer.from(DEFAULT_KEY);
   private iv  = Buffer.from(DEFAULT_IV);
