@@ -37,8 +37,9 @@ exports.BroadlinkRM = void 0;
 exports.discoverBroadlink = discoverBroadlink;
 const dgram = __importStar(require("dgram"));
 const crypto = __importStar(require("crypto"));
-const DEFAULT_KEY = Buffer.from([0x09, 0x76, 0x28, 0x34, 0x3f, 0xe9, 0x9e, 0x23, 0x88, 0x4f, 0xa5, 0x8b, 0xef, 0x80, 0x0e, 0x95]);
-const DEFAULT_IV = Buffer.from([0x56, 0x2e, 0x17, 0x99, 0x6d, 0x09, 0x3d, 0x28, 0xdd, 0xb3, 0xba, 0x69, 0x5a, 0x2e, 0x6f, 0x58]);
+const DEFAULT_KEY = Buffer.from('097628343fe99e23765c1513accf8b02', 'hex');
+const DEFAULT_IV = Buffer.from('562e17996d093d28ddb3ba695a2e6f58', 'hex');
+const SIGNATURE = Buffer.from('5aa5aa555aa5aa55', 'hex');
 async function discoverBroadlink(host) {
     return new Promise((resolve, reject) => {
         const port = 40000 + Math.floor(Math.random() * 10000);
@@ -93,7 +94,6 @@ class BroadlinkRM {
         this.id = Buffer.alloc(4, 0);
         this.count = Math.random() * 0xffff | 0;
         this.authenticated = false;
-        // Persistent socket — same port for auth AND all commands (required for RM4 Pro)
         this.sock = null;
         this.resolver = null;
         this.rejecter = null;
@@ -109,13 +109,13 @@ class BroadlinkRM {
     build(cmd, payload) {
         this.count = (this.count + 1) & 0xffff;
         const h = Buffer.alloc(0x38, 0);
-        h.writeUInt16LE(0x5a69, 0);
+        SIGNATURE.copy(h, 0);
         h.writeUInt16LE(this.devtype, 0x24);
+        h[0x26] = cmd;
         h.writeUInt16LE(this.count, 0x28);
         (this.mac ?? Buffer.alloc(6, 0)).copy(h, 0x2a);
         this.id.copy(h, 0x30);
         h.writeUInt16LE(this.cs(payload), 0x34);
-        h[0x26] = cmd;
         const f = Buffer.concat([h, this.encrypt(payload)]);
         f.writeUInt16LE(this.cs(f), 0x20);
         return f;
@@ -148,7 +148,7 @@ class BroadlinkRM {
                     rj(new Error(String(err)));
                 }
             });
-            s.bind(0, () => { this.sock = s; this.log.debug('[Broadlink] persistent socket bound on port ' + s.address().port); resolve(s); });
+            s.bind(0, () => { this.sock = s; resolve(s); });
             s.once('error', reject);
         });
     }
@@ -161,11 +161,7 @@ class BroadlinkRM {
             }
             this.resolver = resolve;
             this.rejecter = reject;
-            this.timer = setTimeout(() => {
-                this.resolver = null;
-                this.rejecter = null;
-                reject(new Error('timeout ' + this.host));
-            }, 10000);
+            this.timer = setTimeout(() => { this.resolver = null; this.rejecter = null; reject(new Error('timeout ' + this.host)); }, 10000);
             sock.send(pkt, 80, this.host, e => { if (e) {
                 if (this.timer)
                     clearTimeout(this.timer);
@@ -191,63 +187,89 @@ class BroadlinkRM {
         this.iv = Buffer.from(DEFAULT_IV);
         this.id = Buffer.alloc(4, 0);
         const p = Buffer.alloc(0x50, 0);
-        for (let i = 0; i < 15; i++)
-            p[4 + i] = 0x31;
-        p[0x1e] = 1;
-        p[0x2d] = 1;
-        Buffer.from('homebridge').copy(p, 0x30);
+        for (let i = 0x04; i < 0x14; i++)
+            p[i] = 0x31;
+        p[0x1e] = 0x01;
+        p[0x2d] = 0x01;
+        Buffer.from('Test 1').copy(p, 0x30);
         const r = await this.tx(this.build(0x65, p));
-        if (r.length >= 0x38 + 16) {
+        const err = r.readUInt16LE(0x22);
+        if (err === 0 && r.length >= 0x38 + 16) {
             const d = this.decrypt(r.slice(0x38));
             this.id = d.slice(0, 4);
             this.key = d.slice(4, 20);
-            this.log.info('[Broadlink] ' + this.host + ' auth OK (key exchanged)');
+            this.authenticated = true;
+            this.log.info('[Broadlink] ' + this.host + ' auth OK (session key acquired)');
         }
         else {
-            this.log.warn('[Broadlink] ' + this.host + ' auth short (' + r.length + 'b), using default key');
+            this.authenticated = false;
+            this.log.warn('[Broadlink] ' + this.host + ' auth failed (len=' + r.length + ' err=0x' + err.toString(16) + ')');
+            throw new Error('auth failed');
         }
-        this.authenticated = true;
+    }
+    wrap(command, data) {
+        const p = Buffer.alloc(6 + data.length, 0);
+        p.writeUInt16LE(data.length + 4, 0);
+        p.writeUInt32LE(command, 2);
+        data.copy(p, 6);
+        return p;
     }
     async sendData(code) {
-        if (!this.authenticated)
-            await this.auth();
-        const p = Buffer.alloc(4 + code.length, 0);
-        p[0] = 0x02;
-        code.copy(p, 4);
+        if (!this.authenticated) {
+            try {
+                await this.auth();
+            }
+            catch (e) {
+                this.log.warn('[Broadlink] auth before sendData failed: ' + e);
+            }
+        }
+        const send = () => this.tx(this.build(0x6a, this.wrap(0x02, code)));
         try {
-            await this.tx(this.build(0x6a, p));
+            await send();
         }
         catch (e) {
-            this.log.warn('[Broadlink] retry: ' + e);
+            this.log.warn('[Broadlink] sendData retry: ' + e);
             this.authenticated = false;
-            await this.auth();
-            await this.tx(this.build(0x6a, p));
+            try {
+                await this.auth();
+            }
+            catch (_e) { /* ignore */ }
+            await send();
         }
     }
     async getTemperature() {
-        if (!this.authenticated)
-            await this.auth();
-        const isRM4 = this.devtype >= 0x5000;
-        const p = Buffer.alloc(16, 0);
-        p[0] = isRM4 ? 0x24 : 0x01;
-        try {
-            const r = await this.tx(this.build(0x6a, p));
-            if (r.length < 0x38 + 8)
-                return null;
-            const err = r.readUInt16LE(0x22);
-            if (err !== 0) {
-                this.log.warn('[Broadlink] temp err: 0x' + err.toString(16));
+        if (!this.authenticated) {
+            try {
+                await this.auth();
+            }
+            catch (e) {
+                this.log.warn('[Broadlink] auth before temp failed: ' + e);
                 return null;
             }
-            const d = this.decrypt(r.slice(0x38));
-            this.log.info('[Broadlink] temp bytes: ' + Array.from(d.slice(0, 8)).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
-            const t = d[0x04] + d[0x05] / (isRM4 ? 100.0 : 10.0);
-            return (t > -20 && t < 70) ? Math.round(t * 10) / 10 : null;
         }
-        catch (e) {
-            this.log.warn('[Broadlink] getTemperature: ' + e);
-            return null;
+        for (let attempt = 0; attempt < 4; attempt++) {
+            try {
+                const r = await this.tx(this.build(0x6a, this.wrap(0x24, Buffer.alloc(0))));
+                if (r.length < 0x38 + 8)
+                    return null;
+                const err = r.readUInt16LE(0x22);
+                if (err !== 0) {
+                    this.log.debug('[Broadlink] temp busy 0x' + err.toString(16) + ' (attempt ' + (attempt + 1) + ')');
+                    await new Promise(res => setTimeout(res, 600));
+                    continue;
+                }
+                const d = this.decrypt(r.slice(0x38));
+                const t = d[0x06] + d[0x07] / 100.0;
+                const h = d[0x08] + d[0x09] / 100.0;
+                this.log.info('[Broadlink] ' + this.host + ' temp=' + t.toFixed(2) + 'C humidity=' + h.toFixed(2) + '%');
+                return (t > -20 && t < 70) ? Math.round(t * 10) / 10 : null;
+            }
+            catch (e) {
+                this.log.warn('[Broadlink] getTemperature: ' + e);
+                return null;
+            }
         }
+        return null;
     }
 }
 exports.BroadlinkRM = BroadlinkRM;

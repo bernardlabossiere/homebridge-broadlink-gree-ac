@@ -26,6 +26,7 @@ export declare class BroadlinkRM {
     private getSocket;
     private tx;
     auth(): Promise<void>;
+    private wrap;
     sendData(code: Buffer): Promise<void>;
     getTemperature(): Promise<number | null>;
 }
