@@ -110,30 +110,72 @@ class BroadlinkRM {
         this.authenticated = true;
     }
     async getTemperature() {
-        // RM4 Pro uses 0x24, older RM use 0x01
+        // Ensure device is discovered
+        if (!this.mac || this.mac.equals(Buffer.alloc(6, 0))) {
+            try {
+                const { mac, devtype } = await discoverBroadlink(this.host);
+                this.mac = mac;
+                this.devtype = devtype;
+            }
+            catch (e) {
+                this.log.warn('[Broadlink] discovery failed: ' + e);
+                return null;
+            }
+        }
         const isRM4 = (this.devtype >= 0x5000);
         const payload = Buffer.alloc(16, 0);
         payload[0] = isRM4 ? 0x24 : 0x01;
-        try {
-            const resp = await this.tx(this.build(0x6a, payload));
-            this.log.info('[Broadlink] temp resp: ' + resp.length + 'b err=' + resp.readUInt16LE(0x22));
-            if (resp.length < 0x38 + 8)
-                return null;
-            const err = resp.readUInt16LE(0x22);
-            if (err !== 0) {
-                this.log.warn('[Broadlink] sensor error: 0x' + err.toString(16));
-                return null;
+        // Auth + temp through SAME socket (RM4 Pro associates auth to source port)
+        return new Promise(resolve => {
+            const sock = dgram.createSocket({ type: 'udp4' });
+            const timer = setTimeout(() => { try {
+                sock.close();
             }
-            const dec = this.decrypt(resp.slice(0x38));
-            this.log.info('[Broadlink] temp bytes: ' + Array.from(dec.slice(0, 8)).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
-            // RM4 Pro: /100, older RM: /10
-            const temp = dec[0x04] + dec[0x05] / (isRM4 ? 100.0 : 10.0);
-            return (temp > -20 && temp < 70) ? Math.round(temp * 10) / 10 : null;
-        }
-        catch (e) {
-            this.log.info('[Broadlink] getTemperature failed: ' + e);
-            return null;
-        }
+            catch { } resolve(null); }, 15000);
+            let step = 'auth';
+            sock.on('message', msg => {
+                if (step === 'auth') {
+                    if (msg.length >= 0x38 + 16) {
+                        const d = this.decrypt(msg.slice(0x38));
+                        this.id = d.slice(0, 4);
+                        this.key = d.slice(4, 20);
+                        this.log.info('[Broadlink] ' + this.host + ' auth OK via persistent socket');
+                    }
+                    step = 'temp';
+                    sock.send(this.build(0x6a, payload), 80, this.host);
+                }
+                else {
+                    clearTimeout(timer);
+                    try {
+                        sock.close();
+                    }
+                    catch { }
+                    if (msg.length < 0x38 + 8) {
+                        resolve(null);
+                        return;
+                    }
+                    const err = msg.readUInt16LE(0x22);
+                    if (err !== 0) {
+                        this.log.warn('[Broadlink] temp err: 0x' + err.toString(16));
+                        resolve(null);
+                        return;
+                    }
+                    const dec = this.decrypt(msg.slice(0x38));
+                    this.log.info('[Broadlink] temp bytes: ' + Array.from(dec.slice(0, 8)).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
+                    const temp = dec[0x04] + dec[0x05] / (isRM4 ? 100.0 : 10.0);
+                    resolve((temp > -20 && temp < 70) ? Math.round(temp * 10) / 10 : null);
+                }
+            });
+            sock.bind(0, () => {
+                const p = Buffer.alloc(0x50, 0);
+                for (let i = 0; i < 15; i++)
+                    p[4 + i] = 0x31;
+                p[0x1e] = 1;
+                p[0x2d] = 1;
+                Buffer.from('homebridge').copy(p, 0x30);
+                sock.send(this.build(0x65, p), 80, this.host);
+            });
+        });
     }
     async sendData(code) {
         if (!this.authenticated)

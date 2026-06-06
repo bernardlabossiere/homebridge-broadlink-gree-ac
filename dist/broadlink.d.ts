@@ -1,8 +1,8 @@
 import { Logger } from 'homebridge';
 export declare class BroadlinkRM {
     private readonly host;
-    private readonly mac;
-    private readonly devtype;
+    private mac;
+    private devtype;
     private readonly log;
     private key;
     private iv;
