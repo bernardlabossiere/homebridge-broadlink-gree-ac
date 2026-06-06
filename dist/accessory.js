@@ -12,6 +12,7 @@ class GreeACAccessory {
         this.state = { powered: false, mode: 'cool', temperature: 21, fan: 'auto' };
         this.preAF = null;
         this.afActive = false;
+        this.roomTemperature = null;
         const C = platform.Characteristic, S = platform.Service;
         this.afTemp = cfg.antiFrostTemperature ?? 8;
         this.ir = new ircodes_1.IRCodeManager(cfg.irCodesFile);
@@ -35,10 +36,11 @@ class GreeACAccessory {
             return C.TargetHeaterCoolerState.HEAT; if (this.state.mode === 'cool')
             return C.TargetHeaterCoolerState.COOL; return C.TargetHeaterCoolerState.AUTO; })
             .onSet(v => this.setMode(v));
-        this.hc.getCharacteristic(C.CurrentTemperature).onGet(() => this.afActive ? this.afTemp : this.state.temperature);
+        this.hc.getCharacteristic(C.CurrentTemperature).onGet(() => this.afActive ? this.afTemp : (this.roomTemperature ?? this.state.temperature));
         this.hc.getCharacteristic(C.HeatingThresholdTemperature).setProps({ minValue: this.minT, maxValue: this.maxT, minStep: 1 }).onGet(() => this.afActive ? this.afTemp : this.state.temperature).onSet(v => this.setTemp(v));
         this.hc.getCharacteristic(C.CoolingThresholdTemperature).setProps({ minValue: this.minT, maxValue: this.maxT, minStep: 1 }).onGet(() => this.afActive ? this.afTemp : this.state.temperature).onSet(v => this.setTemp(v));
         this.hc.getCharacteristic(C.RotationSpeed).setProps({ minValue: 0, maxValue: 100, minStep: 25 }).onGet(() => this.f2p(this.state.fan)).onSet(v => this.setFan(v));
+        this.startTemperaturePolling();
         if (cfg.antiFrostSwitch !== false) {
             const suf = cfg.antiFrostNameSuffix ?? 'anti-frost';
             const nm = `${cfg.name} ${suf}`;
@@ -117,6 +119,20 @@ class GreeACAccessory {
     catch (e) {
         this.platform.log.error(`[${this.cfg.name}] OFF failed: ${e}`);
     } }
+    startTemperaturePolling() {
+        const poll = async () => {
+            const t = await this.rm.getTemperature();
+            if (t !== null) {
+                this.roomTemperature = t;
+                this.platform.log.debug('[' + this.cfg.name + '] Room temp: ' + t + '°C');
+                if (!this.afActive) {
+                    this.hc.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, t);
+                }
+            }
+        };
+        poll();
+        setInterval(poll, 60000);
+    }
     async sendAntiFrost() {
         if (this.cfg.antiFrostCode) {
             try {

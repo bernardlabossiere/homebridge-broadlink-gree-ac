@@ -46,6 +46,19 @@ export class BroadlinkRM {
     this.authenticated=true;
   }
 
+  async getTemperature():Promise<number|null>{
+    const payload=Buffer.alloc(16,0); payload[0]=0x01;
+    try{
+      const resp=await this.tx(this.build(0x6a,payload));
+      if(resp.length<0x38+8) return null;
+      const err=resp.readUInt16LE(0x22);
+      if(err!==0){this.log.warn('[Broadlink] sensor error: '+err);return null;}
+      const dec=this.decrypt(resp.slice(0x38));
+      const temp=dec[0x04]+dec[0x05]/10.0;
+      return (temp>-20&&temp<70)?Math.round(temp*10)/10:null;
+    }catch(e){this.log.debug('[Broadlink] getTemperature: '+e);return null;}
+  }
+
   async sendData(code:Buffer):Promise<void>{
     if(!this.authenticated) await this.auth();
     const p=Buffer.alloc(4+code.length,0); p[0]=0x02; code.copy(p,4);

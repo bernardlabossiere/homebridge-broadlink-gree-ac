@@ -12,6 +12,7 @@ export declare class GreeACAccessory {
     private state;
     private preAF;
     private afActive;
+    private roomTemperature;
     private readonly afTemp;
     private readonly minT;
     private readonly maxT;
@@ -22,6 +23,7 @@ export declare class GreeACAccessory {
     private setFan;
     private setAF;
     private sendOff;
+    private startTemperaturePolling;
     private sendAntiFrost;
     private sendNow;
     private f2p;

@@ -17,5 +17,6 @@ export declare class BroadlinkRM {
     private build;
     private tx;
     auth(): Promise<void>;
+    getTemperature(): Promise<number | null>;
     sendData(code: Buffer): Promise<void>;
 }
