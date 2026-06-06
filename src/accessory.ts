@@ -102,9 +102,10 @@ export class GreeACAccessory {
   private startTemperaturePolling() {
     const poll = async () => {
       const t = await this.rm.getTemperature();
+      this.platform.log.debug('['+this.cfg.name+'] Temp poll result: '+(t===null?'null (no sensor?)':t+'°C'));
       if(t!==null){
         this.roomTemperature = t;
-        this.platform.log.debug('['+this.cfg.name+'] Room temp: '+t+'°C');
+        this.platform.log.info('['+this.cfg.name+'] Room temp: '+t+'°C');
         if(!this.afActive){
           this.hc.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, t);
         }

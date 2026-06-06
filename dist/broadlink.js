@@ -126,7 +126,7 @@ class BroadlinkRM {
             return (temp > -20 && temp < 70) ? Math.round(temp * 10) / 10 : null;
         }
         catch (e) {
-            this.log.debug('[Broadlink] getTemperature: ' + e);
+            this.log.info('[Broadlink] getTemperature failed: ' + e);
             return null;
         }
     }

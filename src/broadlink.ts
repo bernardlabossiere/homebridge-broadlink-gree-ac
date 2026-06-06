@@ -56,7 +56,7 @@ export class BroadlinkRM {
       const dec=this.decrypt(resp.slice(0x38));
       const temp=dec[0x04]+dec[0x05]/10.0;
       return (temp>-20&&temp<70)?Math.round(temp*10)/10:null;
-    }catch(e){this.log.debug('[Broadlink] getTemperature: '+e);return null;}
+    }catch(e){this.log.info('[Broadlink] getTemperature failed: '+e);return null;}
   }
 
   async sendData(code:Buffer):Promise<void>{
