@@ -78,7 +78,7 @@ export class GreeACAccessory {
       this.afActive=true;
       if(!this.state.powered) this.platform.log.info(`[${this.cfg.name}] Anti-frost: device OFF, powering on HEAT 21°C first`);
       this.state={powered:true,mode:'heat',temperature:this.afTemp,fan:'auto'};
-      await this.sendNow();
+      await this.sendAntiFrost();
       this.platform.log.info(`[${this.cfg.name}] Anti-frost ON -> ${this.afTemp}°C`);
       this.hc.updateCharacteristic(C.Active,C.Active.ACTIVE);
       this.hc.updateCharacteristic(C.CurrentHeaterCoolerState,C.CurrentHeaterCoolerState.HEATING);
@@ -97,6 +97,21 @@ export class GreeACAccessory {
   }
 
   private async sendOff(){ try{await this.rm.sendData(this.ir.offCode());this.platform.log.debug(`[${this.cfg.name}] Sent OFF`);}catch(e){this.platform.log.error(`[${this.cfg.name}] OFF failed: ${e}`);} }
+  private async sendAntiFrost(){
+    if(this.cfg.antiFrostCode){
+      try{
+        await this.rm.sendData(Buffer.from(this.cfg.antiFrostCode,'base64'));
+        this.platform.log.info('['+this.cfg.name+'] Anti-frost: sent custom IR code');
+        const C=this.platform.Characteristic;
+        this.hc.updateCharacteristic(C.Active,C.Active.ACTIVE);
+        this.hc.updateCharacteristic(C.CurrentHeaterCoolerState,C.CurrentHeaterCoolerState.HEATING);
+        this.hc.updateCharacteristic(C.CurrentTemperature,this.afTemp);
+        this.hc.updateCharacteristic(C.HeatingThresholdTemperature,this.afTemp);
+      }catch(e){this.platform.log.error('['+this.cfg.name+'] Anti-frost custom code failed: '+e);}
+    } else {
+      await this.sendNow();
+    }
+  }
   private async sendNow(){ const c=this.ir.code(this.state.mode,this.state.fan,this.state.temperature); if(!c){this.platform.log.warn(`[${this.cfg.name}] No code for ${this.state.mode}/${this.state.fan}/${this.state.temperature}°C`);return;} try{await this.rm.sendData(c);this.platform.log.debug(`[${this.cfg.name}] Sent ${this.state.mode}/${this.state.fan}/${this.state.temperature}°C`);}catch(e){this.platform.log.error(`[${this.cfg.name}] Send failed: ${e}`);} }
   private f2p(f:FanMode):number{ return {low:25,mid:50,high:75,auto:100}[f]??100; }
   private p2f(p:number):FanMode{ if(p<=25) return 'low'; if(p<=50) return 'mid'; if(p<=75) return 'high'; return 'auto'; }

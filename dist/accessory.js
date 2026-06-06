@@ -82,7 +82,7 @@ class GreeACAccessory {
             if (!this.state.powered)
                 this.platform.log.info(`[${this.cfg.name}] Anti-frost: device OFF, powering on HEAT 21°C first`);
             this.state = { powered: true, mode: 'heat', temperature: this.afTemp, fan: 'auto' };
-            await this.sendNow();
+            await this.sendAntiFrost();
             this.platform.log.info(`[${this.cfg.name}] Anti-frost ON -> ${this.afTemp}°C`);
             this.hc.updateCharacteristic(C.Active, C.Active.ACTIVE);
             this.hc.updateCharacteristic(C.CurrentHeaterCoolerState, C.CurrentHeaterCoolerState.HEATING);
@@ -117,6 +117,25 @@ class GreeACAccessory {
     catch (e) {
         this.platform.log.error(`[${this.cfg.name}] OFF failed: ${e}`);
     } }
+    async sendAntiFrost() {
+        if (this.cfg.antiFrostCode) {
+            try {
+                await this.rm.sendData(Buffer.from(this.cfg.antiFrostCode, 'base64'));
+                this.platform.log.info('[' + this.cfg.name + '] Anti-frost: sent custom IR code');
+                const C = this.platform.Characteristic;
+                this.hc.updateCharacteristic(C.Active, C.Active.ACTIVE);
+                this.hc.updateCharacteristic(C.CurrentHeaterCoolerState, C.CurrentHeaterCoolerState.HEATING);
+                this.hc.updateCharacteristic(C.CurrentTemperature, this.afTemp);
+                this.hc.updateCharacteristic(C.HeatingThresholdTemperature, this.afTemp);
+            }
+            catch (e) {
+                this.platform.log.error('[' + this.cfg.name + '] Anti-frost custom code failed: ' + e);
+            }
+        }
+        else {
+            await this.sendNow();
+        }
+    }
     async sendNow() { const c = this.ir.code(this.state.mode, this.state.fan, this.state.temperature); if (!c) {
         this.platform.log.warn(`[${this.cfg.name}] No code for ${this.state.mode}/${this.state.fan}/${this.state.temperature}°C`);
         return;

@@ -22,6 +22,7 @@ export declare class GreeACAccessory {
     private setFan;
     private setAF;
     private sendOff;
+    private sendAntiFrost;
     private sendNow;
     private f2p;
     private p2f;
