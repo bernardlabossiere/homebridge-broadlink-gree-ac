@@ -61,6 +61,11 @@
               "title": "Anti-Frost Switch Name Suffix",
               "type": "string",
               "default": "anti-frost"
+            },
+            "antiFrostCode": {
+              "title": "Anti-Frost Raw IR Code (optional)",
+              "type": "string",
+              "description": "Custom Broadlink base64 IR code for anti-frost (from HA remote.send_command, without b64: prefix). Bypasses SmartIR lookup."
             }
           }
         }

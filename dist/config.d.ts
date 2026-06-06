@@ -9,6 +9,7 @@ export interface GreeACDeviceConfig {
     antiFrostSwitch?: boolean;
     antiFrostTemperature?: number;
     antiFrostNameSuffix?: string;
+    antiFrostCode?: string;
 }
 export interface BroadlinkGreeACConfig {
     name: string;
