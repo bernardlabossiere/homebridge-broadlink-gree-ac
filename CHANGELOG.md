@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.30
+- Documentation: README updated for RM4 Pro + working temperature sensor
+
+
 ## 1.0.29
 - FIXED RM4 Pro temperature & humidity sensor reading (now working!)
 - Correct 8-byte packet signature (5aa5aa555aa5aa55) required by RM4 Pro for authentication
