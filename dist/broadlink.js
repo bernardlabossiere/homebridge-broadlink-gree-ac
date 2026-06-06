@@ -61,7 +61,7 @@ async function discoverBroadlink(host) {
         const t = setTimeout(() => { try {
             s.close();
         }
-        catch { } reject(new Error('discovery timeout ' + host)); }, 5000);
+        catch { } reject(new Error('discovery timeout')); }, 5000);
         s.once('message', (msg, rinfo) => {
             clearTimeout(t);
             try {
@@ -69,12 +69,10 @@ async function discoverBroadlink(host) {
             }
             catch { }
             if (rinfo.address !== host || msg.length < 0x40) {
-                reject(new Error('bad discovery response'));
+                reject(new Error('bad response'));
                 return;
             }
-            const devtype = msg.readUInt16LE(0x34);
-            const mac = Buffer.from(msg.slice(0x3a, 0x40)).reverse();
-            resolve({ mac, devtype });
+            resolve({ devtype: msg.readUInt16LE(0x34), mac: Buffer.from(msg.slice(0x3a, 0x40)).reverse() });
         });
         s.bind(port, () => s.send(pkt, 80, host, e => { if (e) {
             clearTimeout(t);
@@ -87,16 +85,21 @@ async function discoverBroadlink(host) {
     });
 }
 class BroadlinkRM {
-    constructor(host, mac, devtype = 0x6026, log) {
+    constructor(host, mac, devtype, log) {
         this.host = host;
-        this.mac = mac;
-        this.devtype = devtype;
         this.log = log;
         this.key = Buffer.from(DEFAULT_KEY);
         this.iv = Buffer.from(DEFAULT_IV);
         this.id = Buffer.alloc(4, 0);
         this.count = Math.random() * 0xffff | 0;
         this.authenticated = false;
+        // Persistent socket — same port for auth AND all commands (required for RM4 Pro)
+        this.sock = null;
+        this.resolver = null;
+        this.rejecter = null;
+        this.timer = null;
+        this.mac = mac;
+        this.devtype = devtype;
     }
     pad(d) { const l = Math.ceil(d.length / 16) * 16 || 16; const o = Buffer.alloc(l, 0); d.copy(o); return o; }
     encrypt(d) { const c = crypto.createCipheriv('aes-128-cbc', this.key, this.iv); c.setAutoPadding(false); return Buffer.concat([c.update(this.pad(d)), c.final()]); }
@@ -117,28 +120,76 @@ class BroadlinkRM {
         f.writeUInt16LE(this.cs(f), 0x20);
         return f;
     }
-    tx(pkt) {
-        return new Promise((res, rej) => {
+    async getSocket() {
+        if (this.sock)
+            return this.sock;
+        return new Promise((resolve, reject) => {
             const s = dgram.createSocket({ type: 'udp4' });
-            const t = setTimeout(() => { try {
-                s.close();
-            }
-            catch { } rej(new Error('timeout ' + this.host)); }, 10000);
-            s.once('message', m => { clearTimeout(t); try {
-                s.close();
-            }
-            catch { } res(m); });
-            s.bind(0, () => s.send(pkt, 80, this.host, e => { if (e) {
-                clearTimeout(t);
-                try {
-                    s.close();
+            s.on('message', msg => {
+                if (this.resolver) {
+                    const r = this.resolver;
+                    this.resolver = null;
+                    this.rejecter = null;
+                    if (this.timer) {
+                        clearTimeout(this.timer);
+                        this.timer = null;
+                    }
+                    r(msg);
                 }
-                catch { }
-                rej(e);
-            } }));
+            });
+            s.on('error', err => {
+                this.log.error('[Broadlink] socket error: ' + err);
+                this.sock = null;
+                this.authenticated = false;
+                if (this.rejecter) {
+                    const rj = this.rejecter;
+                    this.rejecter = null;
+                    this.resolver = null;
+                    rj(new Error(String(err)));
+                }
+            });
+            s.bind(0, () => { this.sock = s; this.log.debug('[Broadlink] persistent socket bound on port ' + s.address().port); resolve(s); });
+            s.once('error', reject);
+        });
+    }
+    async tx(pkt) {
+        const sock = await this.getSocket();
+        return new Promise((resolve, reject) => {
+            if (this.resolver) {
+                reject(new Error('concurrent tx'));
+                return;
+            }
+            this.resolver = resolve;
+            this.rejecter = reject;
+            this.timer = setTimeout(() => {
+                this.resolver = null;
+                this.rejecter = null;
+                reject(new Error('timeout ' + this.host));
+            }, 10000);
+            sock.send(pkt, 80, this.host, e => { if (e) {
+                if (this.timer)
+                    clearTimeout(this.timer);
+                this.resolver = null;
+                this.rejecter = null;
+                reject(e);
+            } });
         });
     }
     async auth() {
+        if (!this.mac || this.mac.equals(Buffer.alloc(6, 0))) {
+            try {
+                const { mac, devtype } = await discoverBroadlink(this.host);
+                this.mac = mac;
+                this.devtype = devtype;
+                this.log.info('[Broadlink] ' + this.host + ' discovered type=0x' + devtype.toString(16) + ' mac=' + mac.toString('hex'));
+            }
+            catch (e) {
+                this.log.warn('[Broadlink] discovery failed: ' + e);
+            }
+        }
+        this.key = Buffer.from(DEFAULT_KEY);
+        this.iv = Buffer.from(DEFAULT_IV);
+        this.id = Buffer.alloc(4, 0);
         const p = Buffer.alloc(0x50, 0);
         for (let i = 0; i < 15; i++)
             p[4 + i] = 0x31;
@@ -157,74 +208,6 @@ class BroadlinkRM {
         }
         this.authenticated = true;
     }
-    async getTemperature() {
-        // Ensure device is discovered
-        if (!this.mac || this.mac.equals(Buffer.alloc(6, 0))) {
-            try {
-                const { mac, devtype } = await discoverBroadlink(this.host);
-                this.mac = mac;
-                this.devtype = devtype;
-            }
-            catch (e) {
-                this.log.warn('[Broadlink] discovery failed: ' + e);
-                return null;
-            }
-        }
-        const isRM4 = (this.devtype >= 0x5000);
-        const payload = Buffer.alloc(16, 0);
-        payload[0] = isRM4 ? 0x24 : 0x01;
-        // Auth + temp through SAME socket (RM4 Pro associates auth to source port)
-        return new Promise(resolve => {
-            const sock = dgram.createSocket({ type: 'udp4' });
-            const timer = setTimeout(() => { try {
-                sock.close();
-            }
-            catch { } resolve(null); }, 15000);
-            let step = 'auth';
-            sock.on('message', msg => {
-                if (step === 'auth') {
-                    if (msg.length >= 0x38 + 16) {
-                        const d = this.decrypt(msg.slice(0x38));
-                        this.id = d.slice(0, 4);
-                        this.key = d.slice(4, 20);
-                        this.log.info('[Broadlink] ' + this.host + ' auth OK via persistent socket');
-                    }
-                    step = 'temp';
-                    sock.send(this.build(0x6a, payload), 80, this.host);
-                }
-                else {
-                    clearTimeout(timer);
-                    try {
-                        sock.close();
-                    }
-                    catch { }
-                    if (msg.length < 0x38 + 8) {
-                        resolve(null);
-                        return;
-                    }
-                    const err = msg.readUInt16LE(0x22);
-                    if (err !== 0) {
-                        this.log.warn('[Broadlink] temp err: 0x' + err.toString(16));
-                        resolve(null);
-                        return;
-                    }
-                    const dec = this.decrypt(msg.slice(0x38));
-                    this.log.info('[Broadlink] temp bytes: ' + Array.from(dec.slice(0, 8)).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
-                    const temp = dec[0x04] + dec[0x05] / (isRM4 ? 100.0 : 10.0);
-                    resolve((temp > -20 && temp < 70) ? Math.round(temp * 10) / 10 : null);
-                }
-            });
-            sock.bind(0, () => {
-                const p = Buffer.alloc(0x50, 0);
-                for (let i = 0; i < 15; i++)
-                    p[4 + i] = 0x31;
-                p[0x1e] = 1;
-                p[0x2d] = 1;
-                Buffer.from('homebridge').copy(p, 0x30);
-                sock.send(this.build(0x65, p), 80, this.host);
-            });
-        });
-    }
     async sendData(code) {
         if (!this.authenticated)
             await this.auth();
@@ -239,6 +222,31 @@ class BroadlinkRM {
             this.authenticated = false;
             await this.auth();
             await this.tx(this.build(0x6a, p));
+        }
+    }
+    async getTemperature() {
+        if (!this.authenticated)
+            await this.auth();
+        const isRM4 = this.devtype >= 0x5000;
+        const p = Buffer.alloc(16, 0);
+        p[0] = isRM4 ? 0x24 : 0x01;
+        try {
+            const r = await this.tx(this.build(0x6a, p));
+            if (r.length < 0x38 + 8)
+                return null;
+            const err = r.readUInt16LE(0x22);
+            if (err !== 0) {
+                this.log.warn('[Broadlink] temp err: 0x' + err.toString(16));
+                return null;
+            }
+            const d = this.decrypt(r.slice(0x38));
+            this.log.info('[Broadlink] temp bytes: ' + Array.from(d.slice(0, 8)).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
+            const t = d[0x04] + d[0x05] / (isRM4 ? 100.0 : 10.0);
+            return (t > -20 && t < 70) ? Math.round(t * 10) / 10 : null;
+        }
+        catch (e) {
+            this.log.warn('[Broadlink] getTemperature: ' + e);
+            return null;
         }
     }
 }

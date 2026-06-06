@@ -5,22 +5,27 @@ export declare function discoverBroadlink(host: string): Promise<{
 }>;
 export declare class BroadlinkRM {
     private readonly host;
-    private mac;
-    private devtype;
     private readonly log;
     private key;
     private iv;
     private id;
     private count;
     private authenticated;
-    constructor(host: string, mac: Buffer | null, devtype: number | undefined, log: Logger);
+    private mac;
+    private devtype;
+    private sock;
+    private resolver;
+    private rejecter;
+    private timer;
+    constructor(host: string, mac: Buffer | null, devtype: number, log: Logger);
     private pad;
     private encrypt;
     private decrypt;
     private cs;
     private build;
+    private getSocket;
     private tx;
     auth(): Promise<void>;
-    getTemperature(): Promise<number | null>;
     sendData(code: Buffer): Promise<void>;
+    getTemperature(): Promise<number | null>;
 }
