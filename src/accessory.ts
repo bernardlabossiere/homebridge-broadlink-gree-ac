@@ -100,18 +100,25 @@ export class GreeACAccessory {
 
   private async sendOff(){ try{await this.rm.sendData(this.ir.offCode());this.platform.log.debug(`[${this.cfg.name}] Sent OFF`);}catch(e){this.platform.log.error(`[${this.cfg.name}] OFF failed: ${e}`);} }
   private startTemperaturePolling() {
+    let failures = 0;
     const poll = async () => {
+      if(failures >= 3) return;
       const t = await this.rm.getTemperature();
-      this.platform.log.debug('['+this.cfg.name+'] Temp poll result: '+(t===null?'null (no sensor?)':t+'°C'));
-      if(t!==null){
+      if(t !== null){
+        failures = 0;
         this.roomTemperature = t;
         this.platform.log.info('['+this.cfg.name+'] Room temp: '+t+'°C');
-        if(!this.afActive){
+        if(this.afActive === false){
           this.hc.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, t);
+        }
+      } else {
+        failures++;
+        if(failures >= 3){
+          this.platform.log.warn('['+this.cfg.name+'] Temp sensor not responding, disabling polling');
         }
       }
     };
-    poll();
+    setTimeout(poll, 5000);
     setInterval(poll, 60000);
   }
 
