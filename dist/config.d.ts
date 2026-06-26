@@ -4,6 +4,7 @@ export interface GreeACDeviceConfig {
     mac: string;
     devtype?: number;
     irCodesFile: string;
+    temperatureSensor?: boolean;
     minTemperature?: number;
     maxTemperature?: number;
     antiFrostSwitch?: boolean;

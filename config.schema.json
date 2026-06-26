@@ -37,6 +37,12 @@
               "type": "string",
               "description": "Leave empty to use bundled GREE 1180.json. Custom path e.g. /homebridge/mymodel.json"
             },
+            "temperatureSensor": {
+              "title": "Enable Room Temperature Sensor",
+              "type": "boolean",
+              "default": true,
+              "description": "Read the RM4 Pro built-in temperature/humidity sensor. Uncheck for RM4 Mini (no sensor)."
+            },
             "minTemperature": {
               "title": "Min Temperature (\u00b0C)",
               "type": "number",

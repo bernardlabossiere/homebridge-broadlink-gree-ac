@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.31] - 2026-06-26
+- Room temperature is still read every 60s (HomeKit stays current) but now logged only once every 30 minutes instead of every poll, to avoid flooding the Homebridge log.
+- Added a "Enable Room Temperature Sensor" checkbox in the plugin config UI (temperatureSensor, default on). Uncheck it for an RM4 Mini that has no sensor; the flag is now actually honored to enable/disable polling.
+
 ## [1.0.30] - 2026-06-06
 - Documentation: updated README to reflect the RM4 Pro and the now-working temperature/humidity sensor; cleaned up the changelog
 
