@@ -39,7 +39,7 @@ export class GreeACAccessory {
     this.hc.getCharacteristic(C.TargetHeaterCoolerState).setProps({validValues:[1,2]})
       .onGet(()=>{if(this.state.mode==='heat') return C.TargetHeaterCoolerState.HEAT; if(this.state.mode==='cool') return C.TargetHeaterCoolerState.COOL; return C.TargetHeaterCoolerState.AUTO;})
       .onSet(v=>this.setMode(v as number));
-    this.hc.getCharacteristic(C.CurrentTemperature).onGet(()=>this.afActive?this.afTemp:(this.roomTemperature??this.state.temperature));
+    this.hc.getCharacteristic(C.CurrentTemperature).onGet(()=>this.roomTemperature??this.state.temperature);
     this.hc.getCharacteristic(C.HeatingThresholdTemperature).setProps({minValue:this.minT,maxValue:this.maxT,minStep:1}).onGet(()=>this.afActive?this.afTemp:this.state.temperature).onSet(v=>this.setTemp(v as number));
     this.hc.getCharacteristic(C.CoolingThresholdTemperature).setProps({minValue:this.minT,maxValue:this.maxT,minStep:1}).onGet(()=>this.afActive?this.afTemp:this.state.temperature).onSet(v=>this.setTemp(v as number));
     this.hc.getCharacteristic(C.RotationSpeed).setProps({minValue:0,maxValue:100,minStep:25}).onGet(()=>this.f2p(this.state.fan)).onSet(v=>this.setFan(v as number));
@@ -86,7 +86,7 @@ export class GreeACAccessory {
       this.hc.updateCharacteristic(C.Active,C.Active.ACTIVE);
       this.hc.updateCharacteristic(C.CurrentHeaterCoolerState,C.CurrentHeaterCoolerState.HEATING);
       this.hc.updateCharacteristic(C.HeatingThresholdTemperature,this.afTemp);
-      this.hc.updateCharacteristic(C.CurrentTemperature,this.afTemp);
+      this.hc.updateCharacteristic(C.CurrentTemperature,this.roomTemperature??this.state.temperature);
       this.hc.updateCharacteristic(C.TargetHeaterCoolerState,C.TargetHeaterCoolerState.HEAT);
     } else {
       this.afActive=false;
@@ -130,7 +130,7 @@ export class GreeACAccessory {
         const C=this.platform.Characteristic;
         this.hc.updateCharacteristic(C.Active,C.Active.ACTIVE);
         this.hc.updateCharacteristic(C.CurrentHeaterCoolerState,C.CurrentHeaterCoolerState.HEATING);
-        this.hc.updateCharacteristic(C.CurrentTemperature,this.afTemp);
+        this.hc.updateCharacteristic(C.CurrentTemperature,this.roomTemperature??this.state.temperature);
         this.hc.updateCharacteristic(C.HeatingThresholdTemperature,this.afTemp);
       }catch(e){this.platform.log.error('['+this.cfg.name+'] Anti-frost custom code failed: '+e);}
     } else {

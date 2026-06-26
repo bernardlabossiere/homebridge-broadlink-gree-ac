@@ -1,7 +1,7 @@
 {
   "name": "homebridge-broadlink-gree-ac",
   "displayName": "Broadlink GREE Air Conditioner",
-  "version": "1.0.34",
+  "version": "1.0.35",
   "description": "Control GREE AC via Broadlink RM IR blaster with anti-frost support. SmartIR codes compatible.",
   "author": "Bernard Labossiere",
   "contributors": [

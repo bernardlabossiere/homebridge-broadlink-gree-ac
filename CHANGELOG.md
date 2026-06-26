@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.35] - 2026-06-26
+- Fixed: the HomeKit Current Temperature now always shows the live room sensor reading and updates immediately on anti-frost toggle, instead of briefly showing the setpoint until the next poll.
+
 ## [1.0.34] - 2026-06-26
 - Fixed: enabling anti-frost now switches the HomeKit tile to HEAT mode and shows the anti-frost setpoint (e.g. 8°C). Previously the tile could stay on the old mode (e.g. Cool 21°C). Disabling anti-frost restores the previous mode, state and setpoint.
 
