@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.33] - 2026-06-26
+- Quieter logs: routine Broadlink discovery/auth/sensor lines moved to debug level, so normal logs no longer fill up every minute. The throttled 'Room temp' line (every 30 min) remains visible.
+
 ## [1.0.32] - 2026-06-26
 - Fixed: HomeKit Current Temperature no longer shows the target setpoint after a scene or temperature change. It now always reflects the RM4 Pro room sensor reading.
 - Temperature now refreshed to HomeKit every 30s (was 60s); log line still limited to once every 30 minutes.

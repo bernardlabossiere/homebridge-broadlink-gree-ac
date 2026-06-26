@@ -177,7 +177,7 @@ class BroadlinkRM {
                 const { mac, devtype } = await discoverBroadlink(this.host);
                 this.mac = mac;
                 this.devtype = devtype;
-                this.log.info('[Broadlink] ' + this.host + ' discovered type=0x' + devtype.toString(16) + ' mac=' + mac.toString('hex'));
+                this.log.debug('[Broadlink] ' + this.host + ' discovered type=0x' + devtype.toString(16) + ' mac=' + mac.toString('hex'));
             }
             catch (e) {
                 this.log.warn('[Broadlink] discovery failed: ' + e);
@@ -199,7 +199,7 @@ class BroadlinkRM {
             this.id = d.slice(0, 4);
             this.key = d.slice(4, 20);
             this.authenticated = true;
-            this.log.info('[Broadlink] ' + this.host + ' auth OK (session key acquired)');
+            this.log.debug('[Broadlink] ' + this.host + ' auth OK (session key acquired)');
         }
         else {
             this.authenticated = false;
@@ -261,7 +261,7 @@ class BroadlinkRM {
                 const d = this.decrypt(r.slice(0x38));
                 const t = d[0x06] + d[0x07] / 100.0;
                 const h = d[0x08] + d[0x09] / 100.0;
-                this.log.info('[Broadlink] ' + this.host + ' temp=' + t.toFixed(2) + 'C humidity=' + h.toFixed(2) + '%');
+                this.log.debug('[Broadlink] ' + this.host + ' temp=' + t.toFixed(2) + 'C humidity=' + h.toFixed(2) + '%');
                 return (t > -20 && t < 70) ? Math.round(t * 10) / 10 : null;
             }
             catch (e) {
