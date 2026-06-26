@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.32] - 2026-06-26
+- Fixed: HomeKit Current Temperature no longer shows the target setpoint after a scene or temperature change. It now always reflects the RM4 Pro room sensor reading.
+- Temperature now refreshed to HomeKit every 30s (was 60s); log line still limited to once every 30 minutes.
+
 ## [1.0.31] - 2026-06-26
 - Room temperature is still read every 60s (HomeKit stays current) but now logged only once every 30 minutes instead of every poll, to avoid flooding the Homebridge log.
 - Added a "Enable Room Temperature Sensor" checkbox in the plugin config UI (temperatureSensor, default on). Uncheck it for an RM4 Mini that has no sensor; the flag is now actually honored to enable/disable polling.

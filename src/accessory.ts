@@ -70,7 +70,7 @@ export class GreeACAccessory {
   private async setTemp(v:number){
     this.state.temperature=Math.round(v);
     if(this.state.powered&&!this.afActive) await this.sendNow();
-    this.hc.updateCharacteristic(this.platform.Characteristic.CurrentTemperature,this.state.temperature);
+    this.hc.updateCharacteristic(this.platform.Characteristic.CurrentTemperature,this.roomTemperature??this.state.temperature);
   }
   private async setFan(p:number){ this.state.fan=this.p2f(p); if(this.state.powered&&!this.afActive) await this.sendNow(); }
 
@@ -94,7 +94,7 @@ export class GreeACAccessory {
         this.state={...this.preAF};
         this.preAF=null;
         if(wasOff){ await this.sendOff(); this.platform.log.info(`[${this.cfg.name}] Anti-frost OFF -> device was OFF, turning off`); this.hc.updateCharacteristic(C.Active,C.Active.INACTIVE); this.hc.updateCharacteristic(C.CurrentHeaterCoolerState,C.CurrentHeaterCoolerState.INACTIVE); }
-        else{ await this.sendNow(); this.platform.log.info(`[${this.cfg.name}] Anti-frost OFF -> restore ${this.state.temperature}°C`); this.hc.updateCharacteristic(C.HeatingThresholdTemperature,this.state.temperature); this.hc.updateCharacteristic(C.CurrentTemperature,this.state.temperature); }
+        else{ await this.sendNow(); this.platform.log.info(`[${this.cfg.name}] Anti-frost OFF -> restore ${this.state.temperature}°C`); this.hc.updateCharacteristic(C.HeatingThresholdTemperature,this.state.temperature); this.hc.updateCharacteristic(C.CurrentTemperature,this.roomTemperature??this.state.temperature); }
       }
     }
   }
@@ -118,7 +118,7 @@ export class GreeACAccessory {
       }
     };
     setTimeout(poll, 5000);
-    setInterval(poll, 60000);
+    setInterval(poll, 30000);
   }
 
   private async sendAntiFrost(){

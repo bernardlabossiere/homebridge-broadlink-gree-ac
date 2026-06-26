@@ -75,7 +75,7 @@ class GreeACAccessory {
         this.state.temperature = Math.round(v);
         if (this.state.powered && !this.afActive)
             await this.sendNow();
-        this.hc.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.state.temperature);
+        this.hc.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, this.roomTemperature ?? this.state.temperature);
     }
     async setFan(p) { this.state.fan = this.p2f(p); if (this.state.powered && !this.afActive)
         await this.sendNow(); }
@@ -110,7 +110,7 @@ class GreeACAccessory {
                     await this.sendNow();
                     this.platform.log.info(`[${this.cfg.name}] Anti-frost OFF -> restore ${this.state.temperature}°C`);
                     this.hc.updateCharacteristic(C.HeatingThresholdTemperature, this.state.temperature);
-                    this.hc.updateCharacteristic(C.CurrentTemperature, this.state.temperature);
+                    this.hc.updateCharacteristic(C.CurrentTemperature, this.roomTemperature ?? this.state.temperature);
                 }
             }
         }
@@ -140,7 +140,7 @@ class GreeACAccessory {
             }
         };
         setTimeout(poll, 5000);
-        setInterval(poll, 60000);
+        setInterval(poll, 30000);
     }
     async sendAntiFrost() {
         if (this.cfg.antiFrostCode) {
