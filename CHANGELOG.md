@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.34] - 2026-06-26
+- Fixed: enabling anti-frost now switches the HomeKit tile to HEAT mode and shows the anti-frost setpoint (e.g. 8°C). Previously the tile could stay on the old mode (e.g. Cool 21°C). Disabling anti-frost restores the previous mode, state and setpoint.
+
 ## [1.0.33] - 2026-06-26
 - Quieter logs: routine Broadlink discovery/auth/sensor lines moved to debug level, so normal logs no longer fill up every minute. The throttled 'Room temp' line (every 30 min) remains visible.
 

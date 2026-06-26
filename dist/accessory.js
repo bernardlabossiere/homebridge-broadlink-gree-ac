@@ -93,6 +93,7 @@ class GreeACAccessory {
             this.hc.updateCharacteristic(C.CurrentHeaterCoolerState, C.CurrentHeaterCoolerState.HEATING);
             this.hc.updateCharacteristic(C.HeatingThresholdTemperature, this.afTemp);
             this.hc.updateCharacteristic(C.CurrentTemperature, this.afTemp);
+            this.hc.updateCharacteristic(C.TargetHeaterCoolerState, C.TargetHeaterCoolerState.HEAT);
         }
         else {
             this.afActive = false;
@@ -109,6 +110,9 @@ class GreeACAccessory {
                 else {
                     await this.sendNow();
                     this.platform.log.info(`[${this.cfg.name}] Anti-frost OFF -> restore ${this.state.temperature}°C`);
+                    this.hc.updateCharacteristic(C.Active, C.Active.ACTIVE);
+                    this.hc.updateCharacteristic(C.TargetHeaterCoolerState, this.state.mode === 'heat' ? C.TargetHeaterCoolerState.HEAT : C.TargetHeaterCoolerState.COOL);
+                    this.hc.updateCharacteristic(C.CurrentHeaterCoolerState, this.state.mode === 'heat' ? C.CurrentHeaterCoolerState.HEATING : C.CurrentHeaterCoolerState.COOLING);
                     this.hc.updateCharacteristic(C.HeatingThresholdTemperature, this.state.temperature);
                     this.hc.updateCharacteristic(C.CurrentTemperature, this.roomTemperature ?? this.state.temperature);
                 }
